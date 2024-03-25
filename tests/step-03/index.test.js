@@ -18,3 +18,10 @@ test("Parse SQL Query", () => {
     whereClauses: [],
   });
 });
+
+test("Parse Invalid SQL Query", () => {
+  const Invalidquery = "TARGET id, name OF sample";
+  expect(() => {
+    parseQuery(Invalidquery);
+  }).toThrow("Invalid query format");
+});
