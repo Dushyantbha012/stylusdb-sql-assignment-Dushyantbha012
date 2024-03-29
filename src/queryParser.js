@@ -4,6 +4,13 @@ function parseQuery(query) {
   let selectPart, fromPart;
   let hasAggregateWithoutGroupBy = false;
 
+  const limitSplit = query.split(/\LIMIT\s/i);
+  query = limitSplit[0];
+  let limit = null;
+  if (limitSplit[1]) {
+    limit = parseInt(limitSplit[1]);
+  }
+
   const orderByMatch = query.split(/\ORDER BY\s/i);
   query = orderByMatch[0];
   let orderByFields = null;
@@ -65,6 +72,7 @@ function parseQuery(query) {
     groupByFields,
     hasAggregateWithoutGroupBy,
     orderByFields,
+    limit,
   };
 }
 

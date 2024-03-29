@@ -12,9 +12,12 @@ async function executeSELECTQuery(query) {
     groupByFields,
     hasAggregateWithoutGroupBy,
     orderByFields,
+    limit,
   } = parseQuery(query);
   let data = await readCSV(`${table}.csv`);
-
+  if (limit !== null) {
+    data = data.slice(0, limit);
+  }
   if (joinTable && joinCondition) {
     const joinData = await readCSV(`${joinTable}.csv`);
 

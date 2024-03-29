@@ -23,6 +23,7 @@ test("Parse SQL Query", () => {
     orderByFields: null,
     groupByFields: null,
     hasAggregateWithoutGroupBy: false,
+    limit: null,
   });
 });
 
@@ -55,6 +56,7 @@ test("Parse SQL Query with WHERE Clause", () => {
     joinType: null,
     groupByFields: null,
     hasAggregateWithoutGroupBy: false,
+    limit: null,
   });
 });
 
