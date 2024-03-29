@@ -23,6 +23,7 @@ test("Parse SQL Query", () => {
     groupByFields: null,
     hasAggregateWithoutGroupBy: false,
     orderByFields: null,
+    isDistinct: false,
     limit: null,
   });
 });
@@ -57,6 +58,7 @@ test("Parse SQL Query with WHERE Clause", () => {
     hasAggregateWithoutGroupBy: false,
     orderByFields: null,
     limit: null,
+    isDistinct: false,
   });
 });
 
@@ -94,6 +96,7 @@ test("Parse SQL Query with Multiple WHERE Clauses", () => {
     hasAggregateWithoutGroupBy: false,
     orderByFields: null,
     limit: null,
+    isDistinct: false,
   });
 });
 

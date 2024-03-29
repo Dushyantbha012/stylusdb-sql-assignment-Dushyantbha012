@@ -4,7 +4,11 @@ function parseQuery(query) {
 
     let selectPart, fromPart;
     let hasAggregateWithoutGroupBy = false;
-
+    let isDistinct = false;
+    if (query.toUpperCase().includes("SELECT DISTINCT")) {
+      isDistinct = true;
+      query = query.replace("SELECT DISTINCT", "SELECT");
+    }
     const limitSplit = query.split(/\LIMIT\s/i);
     query = limitSplit[0];
     let limit = null;
@@ -74,6 +78,7 @@ function parseQuery(query) {
       hasAggregateWithoutGroupBy,
       orderByFields,
       limit,
+      isDistinct,
     };
   } catch (error) {
     throw new Error(`Query parsing error: ${error.message}`);

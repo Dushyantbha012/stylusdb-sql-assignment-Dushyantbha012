@@ -14,6 +14,7 @@ async function executeSELECTQuery(query) {
       hasAggregateWithoutGroupBy,
       orderByFields,
       limit,
+      isDistinct,
     } = parseQuery(query);
     let data = await readCSV(`${table}.csv`);
     if (limit !== null) {
@@ -98,21 +99,31 @@ async function executeSELECTQuery(query) {
     }
 
     try {
-      if (fields[0] === "*") {
-        return filterData;
-      }
-      return filteredData.map((row) => {
-        const selectedRow = {};
-        fields.forEach((field) => {
-          selectedRow[field] = row[field];
+      if (fields[0] !== "*") {
+        filteredData = filteredData.map((row) => {
+          const selectedRow = {};
+          fields.forEach((field) => {
+            selectedRow[field] = row[field];
+          });
+          return selectedRow;
         });
-        return selectedRow;
-      });
+      }
     } catch (err) {
       throw new Error(
         "Fields in query doesn't match the fields in filtered data"
       );
     }
+    if (isDistinct) {
+      filteredData = [
+        ...new Map(
+          filteredData.map((item) => [
+            fields.map((field) => item[field]).join("|"),
+            item,
+          ])
+        ).values(),
+      ];
+    }
+    return filteredData;
   } catch (error) {
     console.error("Error executing query:", error);
     throw new Error(`Error executing query: ${error.message}`);
