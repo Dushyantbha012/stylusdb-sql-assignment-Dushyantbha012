@@ -17,6 +17,7 @@ test("Parse SQL Query", () => {
     table: "student",
     whereClauses: [],
     joinCondition: null,
+    orderByFields: null,
     joinTable: null,
     joinType: null,
     groupByFields: null,

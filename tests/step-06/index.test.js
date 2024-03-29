@@ -18,6 +18,7 @@ test("Parse SQL Query", () => {
     table: "student",
     whereClauses: [],
     joinCondition: null,
+    orderByFields: null,
     joinTable: null,
     joinType: null,
     groupByFields: null,
@@ -49,6 +50,7 @@ test("Parse SQL Query with WHERE Clause", () => {
       },
     ],
     joinCondition: null,
+    orderByFields: null,
     joinTable: null,
     joinType: null,
     groupByFields: null,
@@ -87,6 +89,7 @@ test("Parse SQL Query with Multiple WHERE Clauses", () => {
     joinTable: null,
     joinType: null,
     groupByFields: null,
+    orderByFields: null,
     hasAggregateWithoutGroupBy: false,
   });
 });
