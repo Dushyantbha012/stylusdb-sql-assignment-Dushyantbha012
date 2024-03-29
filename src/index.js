@@ -2,115 +2,120 @@ const { parseQuery } = require("./queryParser");
 const readCSV = require("./csvReader");
 
 async function executeSELECTQuery(query) {
-  const {
-    fields,
-    table,
-    whereClauses,
-    joinType,
-    joinTable,
-    joinCondition,
-    groupByFields,
-    hasAggregateWithoutGroupBy,
-    orderByFields,
-    limit,
-  } = parseQuery(query);
-  let data = await readCSV(`${table}.csv`);
-  if (limit !== null) {
-    data = data.slice(0, limit);
-  }
-  if (joinTable && joinCondition) {
-    const joinData = await readCSV(`${joinTable}.csv`);
-
-    switch (joinType.toUpperCase()) {
-      case "INNER":
-        data = await performInnerJoin(
-          data,
-          joinData,
-          joinCondition,
-          fields,
-          table
-        );
-        break;
-      case "LEFT":
-        data = await performLeftJoin(
-          data,
-          joinData,
-          joinCondition,
-          fields,
-          table
-        );
-        break;
-      case "RIGHT":
-        data = await performRightJoin(
-          data,
-          joinData,
-          joinCondition,
-          fields,
-          table
-        );
-        break;
-    }
-  }
-
-  const filterData = () => {
-    if (whereClauses.length > 0) {
-      return data.filter((row) => {
-        return whereClauses.every((clause) => {
-          return evaluateCondition(row, clause);
-        });
-      });
-    } else {
-      return data;
-    }
-  };
-  let filteredData;
-  filteredData = filterData();
-
-  if (groupByFields || hasAggregateWithoutGroupBy) {
-    const aggregateFields = fields
-      .map((field) => {
-        if (field.includes("as")) {
-          const temp = field.split();
-          let aggField = getAggregateFields(temp[0]);
-          aggField["as"] = field;
-          return aggField;
-        } else {
-          return getAggregateFields(field);
-        }
-      })
-      .filter((field) => field != undefined);
-    filteredData = applyGroupBy(
-      filteredData,
-      groupByFields,
-      aggregateFields,
-      hasAggregateWithoutGroupBy
-    );
-  }
-  if (orderByFields) {
-    filteredData.sort((a, b) => {
-      for (let { fieldName, order } of orderByFields) {
-        if (a[fieldName] < b[fieldName]) return order === "ASC" ? -1 : 1;
-        if (a[fieldName] > b[fieldName]) return order === "ASC" ? 1 : -1;
-      }
-      return 0;
-    });
-  }
-
   try {
-    if (fields[0] === "*") {
-      return filterData;
+    const {
+      fields,
+      table,
+      whereClauses,
+      joinType,
+      joinTable,
+      joinCondition,
+      groupByFields,
+      hasAggregateWithoutGroupBy,
+      orderByFields,
+      limit,
+    } = parseQuery(query);
+    let data = await readCSV(`${table}.csv`);
+    if (limit !== null) {
+      data = data.slice(0, limit);
     }
-    return filteredData.map((row) => {
-      const selectedRow = {};
-      fields.forEach((field) => {
-        selectedRow[field] = row[field];
+    if (joinTable && joinCondition) {
+      const joinData = await readCSV(`${joinTable}.csv`);
+
+      switch (joinType.toUpperCase()) {
+        case "INNER":
+          data = await performInnerJoin(
+            data,
+            joinData,
+            joinCondition,
+            fields,
+            table
+          );
+          break;
+        case "LEFT":
+          data = await performLeftJoin(
+            data,
+            joinData,
+            joinCondition,
+            fields,
+            table
+          );
+          break;
+        case "RIGHT":
+          data = await performRightJoin(
+            data,
+            joinData,
+            joinCondition,
+            fields,
+            table
+          );
+          break;
+      }
+    }
+
+    const filterData = () => {
+      if (whereClauses.length > 0) {
+        return data.filter((row) => {
+          return whereClauses.every((clause) => {
+            return evaluateCondition(row, clause);
+          });
+        });
+      } else {
+        return data;
+      }
+    };
+    let filteredData;
+    filteredData = filterData();
+
+    if (groupByFields || hasAggregateWithoutGroupBy) {
+      const aggregateFields = fields
+        .map((field) => {
+          if (field.includes("as")) {
+            const temp = field.split();
+            let aggField = getAggregateFields(temp[0]);
+            aggField["as"] = field;
+            return aggField;
+          } else {
+            return getAggregateFields(field);
+          }
+        })
+        .filter((field) => field != undefined);
+      filteredData = applyGroupBy(
+        filteredData,
+        groupByFields,
+        aggregateFields,
+        hasAggregateWithoutGroupBy
+      );
+    }
+    if (orderByFields) {
+      filteredData.sort((a, b) => {
+        for (let { fieldName, order } of orderByFields) {
+          if (a[fieldName] < b[fieldName]) return order === "ASC" ? -1 : 1;
+          if (a[fieldName] > b[fieldName]) return order === "ASC" ? 1 : -1;
+        }
+        return 0;
       });
-      return selectedRow;
-    });
-  } catch (err) {
-    throw new Error(
-      "Fields in query doesn't match the fields in filtered data"
-    );
+    }
+
+    try {
+      if (fields[0] === "*") {
+        return filterData;
+      }
+      return filteredData.map((row) => {
+        const selectedRow = {};
+        fields.forEach((field) => {
+          selectedRow[field] = row[field];
+        });
+        return selectedRow;
+      });
+    } catch (err) {
+      throw new Error(
+        "Fields in query doesn't match the fields in filtered data"
+      );
+    }
+  } catch (error) {
+    console.error("Error executing query:", error);
+    throw new Error(`Error executing query: ${error.message}`);
   }
 }
 
