@@ -30,4 +30,5 @@ test('Execute INSERT INTO Query for grades.csv', async () => {
 
     // Cleanup: Delete grades.csv
     fs.unlinkSync('grades.csv');
+    
 });
