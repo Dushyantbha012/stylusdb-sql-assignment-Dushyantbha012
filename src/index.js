@@ -1,5 +1,9 @@
-const { parseQuery } = require("./queryParser");
-const readCSV = require("./csvReader");
+const {
+  parseSelectQuery,
+  parseInsertQuery,
+  parseDeleteQuery,
+} = require("./queryParser");
+const { readCSV, writeCSV } = require("./csvReader");
 
 async function executeSELECTQuery(query) {
   try {
@@ -15,11 +19,9 @@ async function executeSELECTQuery(query) {
       orderByFields,
       limit,
       isDistinct,
-    } = parseQuery(query);
+    } = parseSelectQuery(query);
     let data = await readCSV(`${table}.csv`);
-    if (limit !== null) {
-      data = data.slice(0, limit);
-    }
+
     if (joinTable && joinCondition) {
       const joinData = await readCSV(`${joinTable}.csv`);
 
@@ -67,7 +69,9 @@ async function executeSELECTQuery(query) {
     };
     let filteredData;
     filteredData = filterData();
-
+    if (limit !== null) {
+      filteredData = filteredData.slice(0, limit);
+    }
     if (groupByFields || hasAggregateWithoutGroupBy) {
       const aggregateFields = fields
         .map((field) => {
@@ -125,7 +129,6 @@ async function executeSELECTQuery(query) {
     }
     return filteredData;
   } catch (error) {
-    console.error("Error executing query:", error);
     throw new Error(`Error executing query: ${error.message}`);
   }
 }
@@ -241,6 +244,10 @@ function evaluateCondition(row, clause) {
   let { field, operator, value } = clause;
   value = trimQuotes(value);
   if (row[field] === undefined) return true;
+  if (operator === "LIKE") {
+    const regexPattern = "^" + value.replace(/%/g, ".*") + "$";
+    return new RegExp(regexPattern, "i").test(row[field]);
+  }
   switch (operator) {
     case "=":
       return row[field] === value;
@@ -391,4 +398,43 @@ function applyGroupBy(
   return results;
 }
 
-module.exports = executeSELECTQuery;
+async function executeINSERTQuery(query) {
+  try {
+    let { type, table, columns, values } = parseInsertQuery(query);
+
+    columns = columns.map((column) => {
+      return trimQuotes(column);
+    });
+    values = values.map((value) => {
+      return trimQuotes(trimQuotes(value));
+    });
+
+    const filePath = `${table}.csv`;
+    const existingData = await readCSV(filePath);
+    const newRow = { ...values };
+
+    existingData.push(newRow);
+
+    await writeCSV(filePath, existingData);
+  } catch (error) {
+    console.error("Error executing INSERT query:", error.message);
+    throw error;
+  }
+}
+async function executeDELETEQuery(query) {
+  const { type, table, whereClauses } = parseDeleteQuery(query);
+  let data = await readCSV(`${table}.csv`);
+  if (whereClauses.length > 0) {
+    data = data.filter((row) => {
+      return whereClauses.some((clause) => !evaluateCondition(row, clause));
+    });
+  } else {
+    data = [];
+  }
+  await writeCSV(`${table}.csv`, data);
+  const afterData = await readCSV(`${table}.csv`);
+
+  return { message: "Rows deleted successfully." };
+}
+
+module.exports = { executeSELECTQuery, executeINSERTQuery, executeDELETEQuery };

@@ -1,4 +1,4 @@
-function parseQuery(query) {
+function parseSelectQuery(query) {
   try {
     query = query.trim();
 
@@ -88,6 +88,11 @@ function parseQuery(query) {
 function parseWhereClause(whereString) {
   const conditionRegex = /(.*?)(=|!=|>|<|>=|<=)(.*)/;
   return whereString.split(/ AND | OR /i).map((conditionString) => {
+    if (conditionString.includes(" LIKE ")) {
+      const condition = conditionString.split(/\sLIKE\s/i);
+      const [field, pattern] = condition;
+      return { field: field.trim(), operator: "LIKE", value: pattern.trim() };
+    }
     const match = conditionString.match(conditionRegex);
     if (match) {
       const [, field, operator, value] = match;
@@ -124,4 +129,46 @@ function getGroupByFields(groupBySplit) {
     return groupBySplit[1].split(",").map((field) => field.trim());
   } else return null;
 }
-module.exports = { parseQuery, parseJoinClause };
+
+function parseInsertQuery(query) {
+  const regex = /INSERT INTO (\w+)\s*(?:\(([^)]+)\))?\s*VALUES\s*\(([^)]+)\)/i;
+  const match = query.match(regex);
+
+  if (match) {
+    const table = match[1];
+    const columns = match[2]?.split(/\s*,\s*/).map((col) => `'${col}'`) || [];
+    const values = match[3].split(/\s*,\s*/).map((val) => `'${val}'`);
+    return {
+      type: "INSERT",
+      table,
+      columns,
+      values,
+    };
+  }
+}
+
+function parseDeleteQuery(query) {
+  const pattern = /^DELETE\s+FROM\s+(.+?)\s+WHERE\s+(.+?)$/i;
+  const match = query.trim().match(pattern);
+
+  if (!match) {
+    throw new Error("Invalid DELETE query format");
+  }
+
+  const table = match[1];
+  const whereClause = match[2];
+
+  const whereClauses = parseWhereClause(whereClause);
+  return {
+    type: "DELETE",
+    table,
+    whereClauses,
+  };
+}
+
+module.exports = {
+  parseSelectQuery,
+  parseJoinClause,
+  parseInsertQuery,
+  parseDeleteQuery,
+};
